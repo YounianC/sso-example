@@ -22,16 +22,4 @@
     <context:component-scan base-package="me.younian.a1"/>
     <!--默认注解映射的支持 -->
     <mvc:annotation-driven/>
-
-    <bean id="viewResolver"
-          class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
-        <property name="cache" value="true"/>
-        <property name="prefix" value=""/>
-        <property name="suffix" value=".ftl"/>
-        <property name="contentType" value="text/html;charset=UTF-8"></property>
-        <property name="requestContextAttribute" value="request"/>
-        <property name="exposeSpringMacroHelpers" value="true"/>
-        <property name="exposeRequestAttributes" value="true"/>
-        <property name="exposeSessionAttributes" value="true"/>
-    </bean>
 </beans>
