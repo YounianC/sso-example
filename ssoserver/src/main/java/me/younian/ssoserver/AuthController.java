@@ -2,6 +2,7 @@ package me.younian.ssoserver;
 
 import com.alibaba.fastjson.JSONObject;
 import me.younian.ssoserver.db.TokenUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,23 +11,23 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.UUID;
 
 @Controller
 public class AuthController {
 
+    @Autowired
+    private TokenUtil tokenUtil;
+
     @RequestMapping("/login")
     public String login(HttpServletRequest request, HttpServletResponse response) {
         String callback = request.getParameter("callback");
+        System.out.println("authServer: try login, callback:" + callback);
 
-        System.out.println("authServer: callback:" + callback + "  sessionId:" + request.getSession().getId());
-
-        if (request.getSession().getAttribute("isLogin") != null
-                && (boolean) request.getSession().getAttribute("isLogin")) {
+        String token = tokenUtil.getCurrentToken(request);
+        if (token != null) {
             try {
-                String token = (String) request.getSession().getAttribute("token");
                 System.out.println("authServer: already login, callback:" + callback);
                 String url = UriComponentsBuilder.fromUriString(callback)
                         .queryParam("token", token)
@@ -63,10 +64,7 @@ public class AuthController {
             if (username.equals("admin") && password.equals("123456")) {
                 String token = UUID.randomUUID().toString();
 
-                request.getSession().setAttribute("isLogin", true);
-                request.getSession().setAttribute("token", token);
-                TokenUtil.addToken(token);
-
+                tokenUtil.addToken(token, request);
                 System.out.println("authServer: addToken:" + token);
 
                 String url = UriComponentsBuilder.fromUriString(callback)
@@ -89,11 +87,11 @@ public class AuthController {
         return "";
     }
 
-
     @ResponseBody
     @RequestMapping("/authCheck")
     public JSONObject authCheck(HttpServletRequest request, HttpServletResponse response) {
         String token = request.getParameter("token");
+        String logoutUrl = request.getParameter("logoutUrl");
         System.out.println("authServer: authCheck:" + token);
         JSONObject object = new JSONObject();
         if (StringUtils.isEmpty(token)) {
@@ -103,13 +101,30 @@ public class AuthController {
             return object;
         }
         object.put("success", true);
-        if (TokenUtil.checkToken(token)) {
+        if (tokenUtil.checkToken(token, logoutUrl)) {
             object.put("auth", true);
             object.put("msg", "success");
         } else {
             object.put("auth", false);
             object.put("msg", "token not valid");
         }
+        return object;
+    }
+
+    @ResponseBody
+    @RequestMapping("/logout")
+    public JSONObject logout(HttpServletRequest request, HttpServletResponse response) {
+        String token = request.getParameter("token");
+        System.out.println("authServer: logout:" + token);
+        JSONObject object = new JSONObject();
+        if (StringUtils.isEmpty(token)) {
+            object.put("success", false);
+            object.put("msg", "invalid param");
+            return object;
+        }
+        tokenUtil.removeToken(token);
+        object.put("success", true);
+        object.put("msg", "success");
         return object;
     }
 }

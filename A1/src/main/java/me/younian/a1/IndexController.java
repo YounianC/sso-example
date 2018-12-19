@@ -12,4 +12,11 @@ public class IndexController {
     public String index() {
         return "a1 index......";
     }
+
+
+    @ResponseBody
+    @RequestMapping("/logout")
+    public String logout() {
+        return "logout success......";
+    }
 }
